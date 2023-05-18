@@ -20,7 +20,7 @@ The whole data of BRATS can be accessed by https://www.synapse.org/#!Synapse:syn
 
 ## Pretrained models
 
-The checkpoints can be download form google drive link in download.txt
+The checkpoints can be download form google drive link in https://drive.google.com/drive/folders/1AuCYGiNOZ8hWrqiV_npsjmcodNVfRb6z?usp=share_link
 
 ## Usage
 
@@ -28,13 +28,13 @@ The checkpoints can be download form google drive link in download.txt
 
 ### Flow model training
 
-Use 'train_flow.py'.
+Use `train_flow.py`.
 
 ### Harmonization using simulation data
 
-Use 'BlindHarmony_simulated_data.py'.
+Use `BlindHarmony_simulated_data.py`.
 
 
 ### Harmonization using simulation data
 
-Use 'BlindHarmony_real_data.py'.
+Use `BlindHarmony_real_data.py`.
