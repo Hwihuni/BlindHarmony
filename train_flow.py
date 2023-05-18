@@ -29,11 +29,11 @@ import matplotlib
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
-os.environ["CUDA_VISIBLE_DEVICES"] = '5,6,7'
 # Capture job id on the cluster
 sacred.SETTINGS.HOST_INFO.CAPTURED_ENV.append('SLURM_JOB_ID')
 
-runs_dir = os.path.join(utils.get_data_root(), 'runs/images')
+#runs_dir = os.path.join(utils.get_data_root(), 'runs/images')
+runs_dir = './runs'
 ex = Experiment('decomposition-flows-images')
 
 fso = observers.FileStorageObserver.create(runs_dir, priority=1)
@@ -43,12 +43,12 @@ ex.observers.extend([fso, autils.NamingObserver(runs_dir, priority=2)])
 # For num_workers > 0 and tensor datasets, bad things happen otherwise.
 torch.multiprocessing.set_start_method("spawn", force=True)
 
+os.environ["CUDA_VISIBLE_DEVICES"] = '5,6,7'
 # noinspection PyUnusedLocal
 @ex.config
 def config():
     # Dataset
-    dataset = "BRATS"
-    #dataset = "cifar-10"
+    dataset = "ADNI"
     num_workers = 1
     valid_frac = 0.01
 
@@ -463,13 +463,6 @@ def train_flow(flow, train_dataset, val_dataset, dataset_dims, device,
                 max_abs_diff = torch.max(torch.abs(random_batch_rec - random_batch_))
                 max_logabsdet = torch.max(logabsdet)
 
-            # fig, axs = plt.subplots(1, 2, figsize=(8, 4))
-            # autils.imshow(make_grid(Preprocess(num_bits).inverse(random_batch[:36, ...]),
-            #                         nrow=6), axs[0])
-            # autils.imshow(make_grid(Preprocess(num_bits).inverse(random_batch_rec[:36, ...]),
-            #                         nrow=6), axs[1])
-            # summary_writer.add_figure(tag='reconstr', figure=fig, global_step=step)
-            # plt.close(fig)
             _log.info("It: {}/{} max_reconstr_abs_diff: {:.3f}".format(step, num_steps, max_abs_diff.item()))
             _log.info("It: {}/{} max_reconstr_logabsdet: {:.3f}".format(step, num_steps, max_logabsdet.item()))
 
@@ -491,11 +484,12 @@ def set_device(use_gpu, multi_gpu, _log):
         torch.set_default_tensor_type('torch.cuda.FloatTensor')
     else:
         device = torch.device('cpu')
-
     if multi_gpu and torch.cuda.device_count() == 1:
         raise RuntimeError('Multiple GPU training requested, but only one GPU is available.')
 
     if multi_gpu:
+
+        _log.info('Current cuda device: {}' .format(torch.cuda.current_device()))
         _log.info('Using all {} GPUs available'.format(torch.cuda.device_count()))
 
     return device
@@ -507,6 +501,10 @@ def get_train_valid_data(dataset, num_bits, valid_frac):
 @ex.capture
 def get_test_data(dataset, num_bits):
     return get_data(dataset, num_bits, train=False)
+
+@ex.capture
+def get_gpu_ind(gpu_ind):
+    return gpu_ind
 
 @ex.command
 def sample_for_paper(seed):

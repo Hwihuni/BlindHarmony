@@ -1,15 +1,10 @@
 import os
-
 import numpy as np
 import scipy.misc
 import sacred
-
 import torch
 from tqdm import tqdm
-
-
 import sys
-print(sys.executable) 
 import natsort, glob, pickle, torch
 import numpy as np
 import os
@@ -18,8 +13,8 @@ import scipy
 from skimage.metrics import peak_signal_noise_ratio as psnr
 from tqdm import tqdm
 import nde.flows, nde.transforms
-def find_files(wildcard): return natsort.natsorted(glob.glob(wildcard, recursive=True))
 import json
+from flow_model import  create_flow
     
 class Dict2Class(object):
       
@@ -31,11 +26,10 @@ class Dict2Class(object):
 def pickleRead(path):
     with open(path, 'rb') as f:
         return pickle.load(f)
-# Convert to tensor
-def t(array): return torch.Tensor(np.expand_dims(array.transpose([2, 0, 1]), axis=1).astype(np.float32)).cuda()
-# convert to image
-def rgb(t): return ((t[:,0,:,:] if len(t.shape) == 4 else t).detach().cpu().numpy().transpose([1, 2, 0]))
 
+def t(array): return torch.Tensor(np.expand_dims(array.transpose([2, 0, 1]), axis=1).astype(np.float32)).cuda()
+def rgb(t): return ((t[:,0,:,:] if len(t.shape) == 4 else t).detach().cpu().numpy().transpose([1, 2, 0]))
+def find_files(wildcard): return natsort.natsorted(glob.glob(wildcard, recursive=True))
 
 
 def load_pkls( path,nmax = -1,nmin = 0):
@@ -96,12 +90,6 @@ def min_max(img):
     #img_normalized = dequant(torch.from_numpy(img_normalized))
     return torch.from_numpy(img_normalized)
 
-# 2 arguments; second one is logabsdet
-# preprocess_glow = nde.transforms.AffineScalarTransform(scale=(1. / 2 ** num_bits), shift=-0.5)
-
-
-# 2 arguments; second one is logabsdet
-# preprocess_glow = nde.transforms.AffineScalarTransform(scale=(1. / 2 ** num_bits), shift=-0.5)
 
 
 def mrflow(img,model,alpha,alpha2,beta_fidel,beta_grad,num,init,gt,th):
@@ -142,32 +130,6 @@ def mrflow(img,model,alpha,alpha2,beta_fidel,beta_grad,num,init,gt,th):
 
     return sr_grad
 
-def gen_sc(pckl,ze,batch,mode = 'exp'):
-    gt = np.zeros((pckl[0].shape[0],pckl[0].shape[1],batch))
-    for i in range(batch):
-        tmp = (pckl[i+batch*ze])
-        gt[:,:,i:i+1] = (tmp-np.min(tmp))/(np.max(tmp)-np.min(tmp))
-    if mode == 'exp':
-        img_sc = np.exp(np.copy(gt))
-    elif mode == 'log':
-        img_sc = np.log(1+3*np.copy(gt))
-    elif mode == 'gamma09':
-        img_sc = (np.copy(gt))**0.9
-    elif mode == 'gamma08':
-        img_sc = (np.copy(gt))**0.8
-    elif mode == 'gamma07':
-        img_sc = (np.copy(gt))**0.7
-    elif mode == 'gamma12':
-        img_sc = (np.copy(gt))**1.2
-    elif mode == 'gamma13':
-        img_sc = (np.copy(gt))**1.3
-    elif mode == 'gamma15':
-        img_sc = (np.copy(gt))**1.5
-    
-    for i in range(batch):
-        tmp = img_sc[:,:,i:i+1]
-        img_sc[:,:,i:i+1] = (tmp-np.min(tmp))/(np.max(tmp)-np.min(tmp))
-    return img_sc,gt
 
 def create_all_dirs(path):
     if "." in path.split("/")[-1]:
@@ -201,18 +163,15 @@ def hist_match(source, t_values,t_quantiles):
 
     return interp_t_values[bin_idx].reshape(oldshape)
 #%env DATAROOT="/home/hwihun/Flow_grad/nsf-master/data/"
+def gen_sc(pckl_sc,ze,batch):
+    img_sc = np.zeros((pckl_sc[0].shape[0],pckl_sc[0].shape[1],batch))
+    for i in range(batch):
+        tmp = (pckl_sc[i+batch*ze])
+        img_sc[:,:,i:i+1] = (tmp-np.min(tmp))/(np.max(tmp)-np.min(tmp))
+        
+    return img_sc
 
-
-os.environ["CUDA_VISIBLE_DEVICES"]='5'
-
-import json
-from flow_model import  create_flow
-class Dict2Class(object):
-      
-    def __init__(self, my_dict):
-          
-        for key in my_dict:
-            setattr(self, key, my_dict[key])
+os.environ["CUDA_VISIBLE_DEVICES"]='6'
 
 c,h,w = 1,144,176
 run_dir = '/home/hwihun/blindharmony/nsf/runs/images/ADNI-12bit_batch256'
@@ -230,9 +189,7 @@ model = create_flow(c, h, w,flow_checkpoint, config).to(device)
 model.eval()
 
 
-conf_path = './confs/MRFlow_adni.yml'
-pckl = load_pkls('/fast_storage/hwihun/pkls_BH/folder35177_test.pklv4')
-pckl_tr = load_pkls('/fast_storage/hwihun/pkls_BH/folder35177_train.pklv4',10000,0)
+pckl_tr = load_pkls('/fast_storage/hwihun/pkls_BH/folder35177_train.pklv4')
 ref = np.zeros([144, 176, 50])
 ref_ = np.zeros([144, 176, 1])
 for i in range(0,10000):
@@ -249,16 +206,16 @@ th = 0.05
 batch = 50
 alpha = 0.001
 alpha2 = 0.06
-modes = ['gamma07','gamma08','gamma09','gamma12','gamma13','exp','log']
-for ii,mode in enumerate(modes):
-    imgs_har = []
-    for ze in tqdm(range(int(len(pckl)/batch))):
-        img_sc,gt = gen_sc(pckl,ze,batch,mode)
-        
-        init = np.tile(ref_,(1,1,batch))*(img_sc>np.percentile(img_sc,45,axis=(0,1),keepdims=True))
-        #init = ref
-        img_mrflow = mrflow(img_sc,model,alpha,alpha2,beta_fidel,beta_grad,num,init,gt,th)
-        for i in range(batch):
-            imgs_har.append(img_mrflow[:,:,i])
-    print(mode)
-    to_pklv4(imgs_har, f'/home/hwihun/blindharmony/nsf/inf_retro/harmonized_pro_{mode}_alpha1_{alpha}_alpha2_{alpha2}_fidel_{beta_fidel}_grad_{beta_grad}_num_{num}.pklv4', vebose=True)
+
+name = '0'
+pckl_sc = load_pkls(f'/fast_storage/hwihun/pkls_BH/folder{name}_test_paired_source.pklv4')
+
+imgs_har = []
+for ze in tqdm(range(int(len(pckl_sc)/batch))):
+    img_sc,gt = gen_sc(pckl_sc,ze,batch)
+    init = ref
+    img_mrflow = mrflow(img_sc,model,alpha1,alpha2,beta_fidel,beta_grad,num,init,gt,th)
+    for i in range(batch):
+        imgs_har.append(img_mrflow[:,:,i])
+
+to_pklv4(imgs_har, f'./inf_pro/harmonized_pro_{name}_alpha1_{alpha1}_alpha2_{alpha2}_fidel_{beta_fidel}_grad_{beta_grad}_num_{num}_init_volume.pklv4', vebose=True)
