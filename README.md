@@ -28,7 +28,7 @@ The checkpoints can be download form google drive link in download.txt
 
 ### Flow model training
 
-Use 'train_bhflow.py'.
+Use 'train_flow.py'.
 
 ### Harmonization using simulation data
 
