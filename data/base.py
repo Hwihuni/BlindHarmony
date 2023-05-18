@@ -8,22 +8,22 @@ from torchvision.datasets.folder import (default_loader,
                                          has_file_allowed_extension,
                                          IMG_EXTENSIONS)
 
-from .plane import GaussianDataset
-from .plane import CrescentDataset
-from .plane import CrescentCubedDataset
-from .plane import SineWaveDataset
-from .plane import AbsDataset
-from .plane import SignDataset
-from .plane import FourCircles
-from .plane import DiamondDataset
-from .plane import TwoSpiralsDataset
-from .plane import CheckerboardDataset
-from .plane import FaceDataset
-from .gas import GasDataset
-from .power import PowerDataset
-from .hepmass import HEPMASSDataset
-from .miniboone import MiniBooNEDataset
-from .bsds300 import BSDS300Dataset
+#from .plane import GaussianDataset
+#from .plane import CrescentDataset
+#from .plane import CrescentCubedDataset
+#from .plane import SineWaveDataset
+#from .plane import AbsDataset
+#from .plane import SignDataset
+#from .plane import FourCircles
+#from .plane import DiamondDataset
+#from .plane import TwoSpiralsDataset
+#from .plane import CheckerboardDataset
+#from .plane import FaceDataset
+#from .gas import GasDataset
+#from .power import PowerDataset
+#from .hepmass import HEPMASSDataset
+#from .miniboone import MiniBooNEDataset
+#from .bsds300 import BSDS300Dataset
 
 
 def load_dataset(name, split, frac=None):

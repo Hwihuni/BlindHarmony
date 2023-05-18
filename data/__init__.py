@@ -9,17 +9,17 @@ from .base import (
     load_num_batches,
     UnlabelledImageFolder
 )
-from data.download import download_file, download_file_from_google_drive
+#from data.download import download_file, download_file_from_google_drive
 
-from .plane import TestGridDataset
+#from .plane import TestGridDataset
 
-from .celeba import CelebA, CelebAHQ, CelebAHQ64Fast
+#from .celeba import CelebA, CelebAHQ, CelebAHQ64Fast
 
-from .imagenet import ImageNet32, ImageNet64, ImageNet64Fast
+#from .imagenet import ImageNet32, ImageNet64, ImageNet64Fast
 
-from .cifar10 import CIFAR10Fast
+#from .cifar10 import CIFAR10Fast
 
-from .omniglot import OmniglotDataset
+#from .omniglot import OmniglotDataset
 
 from .ADNI import ADNI
 
