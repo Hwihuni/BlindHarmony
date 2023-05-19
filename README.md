@@ -7,7 +7,7 @@ Official implementation of BlindHarmony: Blind harmonization for MR image
 
 Neural spline flow is used for flow model training. See https://github.com/bayesiains/nsf.git
 
-Use `environment.yml` for required Conda/pip packages, or use this to create a Conda environment with all dependencies:
+Use `environment.yml` for required packages, or create a Conda environment with all dependencies:
 ```bash
 conda env create -f environment.yml
 ```
@@ -20,7 +20,7 @@ The whole data of BRATS can be accessed by https://www.synapse.org/#!Synapse:syn
 
 ## Pretrained models
 
-The checkpoints can be download form google drive link in https://drive.google.com/drive/folders/1AuCYGiNOZ8hWrqiV_npsjmcodNVfRb6z?usp=share_link
+The checkpoints can be downloaded from google drive link in https://drive.google.com/drive/folders/1AuCYGiNOZ8hWrqiV_npsjmcodNVfRb6z?usp=share_link
 
 ## Usage
 
