@@ -3,11 +3,11 @@ Official implementation of BlindHarmony: Blind harmonization for MR image
 > H. Jeong, H. Byun, D. Kang, and J. Lee, _BlindHarmony: “Blind” Harmonization for MR Images via Flow model_, Arxiv 2023,
 > [[arXiv]]()
 
-##Dependencies
+## Dependencies
 
-Neural spline flow is used for flow mmodel training. See https://github.com/bayesiains/nsf.git
+Neural spline flow is used for flow model training. See https://github.com/bayesiains/nsf.git
 
-Use `environment.yml` for required Conda/pip packages, or use this to create a Conda environment with all dependencies:
+Use `environment.yml` for required packages, or create a Conda environment with all dependencies:
 ```bash
 conda env create -f environment.yml
 ```
@@ -20,7 +20,7 @@ The whole data of BRATS can be accessed by https://www.synapse.org/#!Synapse:syn
 
 ## Pretrained models
 
-The checkpoints can be download form google drive link in download.txt
+The checkpoints can be downloaded from google drive link in https://drive.google.com/drive/folders/1AuCYGiNOZ8hWrqiV_npsjmcodNVfRb6z?usp=share_link
 
 ## Usage
 
@@ -28,13 +28,13 @@ The checkpoints can be download form google drive link in download.txt
 
 ### Flow model training
 
-Use 'train_bhflow.py'.
+Use `train_flow.py`.
 
 ### Harmonization using simulation data
 
-Use 'BlindHarmony_simulated_data.py'.
+Use `BlindHarmony_simulated_data.py`.
 
 
 ### Harmonization using simulation data
 
-Use 'BlindHarmony_real_data.py'.
+Use `BlindHarmony_real_data.py`.
