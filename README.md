@@ -3,9 +3,9 @@ Official implementation of BlindHarmony: Blind harmonization for MR image
 > H. Jeong, H. Byun, D. Kang, and J. Lee, _BlindHarmony: “Blind” Harmonization for MR Images via Flow model_, Arxiv 2023,
 > [[arXiv]]()
 
-##Dependencies
+## Dependencies
 
-Neural spline flow is used for flow mmodel training. See https://github.com/bayesiains/nsf.git
+Neural spline flow is used for flow model training. See https://github.com/bayesiains/nsf.git
 
 Use `environment.yml` for required Conda/pip packages, or use this to create a Conda environment with all dependencies:
 ```bash
