@@ -14,7 +14,7 @@ conda env create -f environment.yml
 
 ## Dataset
 
-The whole data of OASIS-3 can be accessed by https://www.oasis-brains.org/.
+The whole data of OASIS-3 can be accessed by https://www.oasis-brains.org.
 
 The whole data of BRATS can be accessed by https://www.synapse.org/#!Synapse:syn27046444/wiki/616571
 
