@@ -45,6 +45,13 @@ def load_pkls( path,nmax = -1,nmin = 0):
     return images
 
 
+def sobel(image):
+    dx = cv2.Sobel(image,cv2.CV_64F,1,0,3)
+    dy = cv2.Sobel(image,cv2.CV_64F,0,1,3)
+    lr = np.expand_dims(cv2.magnitude(dx,dy),2)
+    return lr, np.abs(dx), np.abs(dy)
+
+
 # Preprocessing
 def dequant(img, num_bits=12):
     """
@@ -90,45 +97,41 @@ def min_max(img):
     #img_normalized = dequant(torch.from_numpy(img_normalized))
     return torch.from_numpy(img_normalized)
 
-
-
-def mrflow(img,model,alpha,alpha2,beta_fidel,beta_grad,num,init,gt,th):
-    sr_step = np.zeros((num,img.shape[0],img.shape[1],img.shape[2]))
+def BlindHarmony(img,model,alpha,beta_fidel,beta_grad,num,init,th=30):
     with torch.no_grad():
-        img_dct = scipy.fft.dctn(img, axes=(0,1))
-        x = np.linspace(0, 1, img.shape[1])
-        y = np.linspace(0, 1, img.shape[0])
-        xv, yv = np.meshgrid(x, y)
-        xv = np.expand_dims(xv,2)
-        yv = np.expand_dims(yv,2)
+
+        _,dx,dy = sobel(img)
+        Gmx = (dx<np.percentile(dx,th,axis=(0,1), keepdims=True))*(img >.05)
+        Gmy = (dy<np.percentile(dy,th,axis=(0,1), keepdims=True))*(img >.05)
+        #sr_0 = gt15 # float (range [0,2**num_bits-1])
         sr_0 = init
+
         z, logabsdet = model._transform(dequant(t(sr_0)), context=None)
-        sr = sr_0 
+
+        sr = sr_0 # float (range [0,2**num_bits-1])
         for temperature in range(0, num):
-            sr_dct = scipy.fft.dctn(sr, axes=(0,1))
-            grad_grad = -scipy.fft.idctn((img_dct-sr_dct)*(xv**2+yv**2 > th**2), axes=(0,1))
+            #print(temperature)
+            dx = Gmx*cv2.Sobel(sr,cv2.CV_64F,1,0,3)
+            dy = Gmy*cv2.Sobel(sr,cv2.CV_64F,0,1,3)
+            grad_grad= -(cv2.Sobel(np.sign(dx),cv2.CV_64F,1,0,3) + cv2.Sobel(np.sign(dy),cv2.CV_64F,0,1,3))
+            grad_fidel = -img/(1e-6+np.sqrt(np.sum(sr**2,(0,1), keepdims=True)))/(1e-6+np.sqrt(np.sum(img**2,(0,1), keepdims=True))) \
+                + np.sum(sr*img,(0,1), keepdims=True)*sr/(1e-6+np.sqrt(np.sum(sr**2,(0,1), keepdims=True))**3)/(1e-6+np.sqrt(np.sum(img**2,(0,1), keepdims=True)))
             
-            N = img.shape[0]*img.shape[1]*img.shape[2]
-            f = N*np.sum(img*sr,(0,1), keepdims=True)-np.sum(img,(0,1), keepdims=True)*np.sum(sr,(0,1), keepdims=True)
-            f_prime = N*img-np.sum(img,(0,1), keepdims=True)
-            g = N*np.sum(sr**2,(0,1), keepdims=True)-np.sum(sr,(0,1), keepdims=True)**2
-            g_prime = 2*N*sr-2*np.sum(sr,(0,1), keepdims=True)
-            coef = N*np.sum(img**2,(0,1), keepdims=True)-np.sum(img,(0,1), keepdims=True)**2
-            grad_fidel = -(f_prime*g-0.5*g_prime*f)/(g**1.5)/(coef**0.5)
-                
+            #imshow(10*beta_fidel*grad_fidel[:,:,0])
             grad = beta_fidel*grad_fidel + beta_grad*grad_grad
             
             sr_grad = sr - grad
-            #sr_step[temperature] = sr_grad
             z, logabsdet = model._transform(dequant(t(sr_grad)), context=None)
-                
-            mean_val = torch.mean(z,1,keepdim = True)
-            std_val = torch.std(z,1,keepdim = True)
-            z = (1 - alpha) * (z - mean_val) + (1 - alpha2 ) * mean_val
+            
+            z = (1-alpha) * z
             sr, logabsdet0 = model._transform.inverse(z, context=None)
             sr = rgb(dequant_inverse(sr))
 
-    return sr_grad
+
+            if np.any(np.isnan(sr)) or np.any(np.isinf(sr)) or np.sum(sr) == 0 or np.any((sr>100)): 
+                sr = sr_grad 
+            
+    return sr
 
 
 def create_all_dirs(path):
@@ -145,24 +148,6 @@ def to_pklv4(obj, path, vebose=False):
     if vebose:
         print("Wrote {}".format(path))
         
-def hist_match(source, t_values,t_quantiles):
-
-    oldshape = source.shape
-    source = source.ravel()
-
-    # get the set of unique pixel values and their corresponding indices and
-    # counts
-    _, bin_idx, s_counts = np.unique(source, return_inverse=True,
-                                            return_counts=True)
-
-    s_quantiles = np.cumsum(s_counts).astype(np.float64)
-    s_quantiles /= s_quantiles[-1]
-
-
-    interp_t_values = np.interp(s_quantiles, t_quantiles, t_values)
-
-    return interp_t_values[bin_idx].reshape(oldshape)
-#%env DATAROOT="/home/hwihun/Flow_grad/nsf-master/data/"
 def gen_sc(pckl_sc,ze,batch):
     img_sc = np.zeros((pckl_sc[0].shape[0],pckl_sc[0].shape[1],batch))
     for i in range(batch):
@@ -171,7 +156,9 @@ def gen_sc(pckl_sc,ze,batch):
         
     return img_sc
 
-os.environ["CUDA_VISIBLE_DEVICES"]='6'
+os.environ["CUDA_VISIBLE_DEVICES"]='0'
+
+#%env DATAROOT="/home/hwihun/Flow_grad/nsf-master/data/"
 
 c,h,w = 1,144,176
 run_dir = '/home/hwihun/blindharmony/nsf/runs/images/ADNI-12bit_batch256'
@@ -188,24 +175,19 @@ torch.set_default_tensor_type('torch.cuda.FloatTensor')
 model = create_flow(c, h, w,flow_checkpoint, config).to(device)
 model.eval()
 
-
-pckl_tr = load_pkls('/fast_storage/hwihun/pkls_BH/folder35177_train.pklv4')
+pckl_tr = load_pkls('/fast_storage/hwihun/pkls/folder35177_resample_train.pklv4',1000,0)
 ref = np.zeros([144, 176, 50])
-ref_ = np.zeros([144, 176, 1])
-for i in range(0,10000):
+for i in range(0,1000):
     slice = pckl_tr[i]
-    ref[:,:,i%50:i%50+1] += (slice-np.min(slice))/(np.max(slice)-np.min(slice))/200
-    ref_ += (slice-np.min(slice))/(np.max(slice)-np.min(slice))/10000
+    ref[:,:,i%50:i%50+1] += (slice-np.min(slice))/(np.max(slice)-np.min(slice))/20
 
 
-num = 5
 
-beta_fidel = 1000.0
-beta_grad = 0.5
-th = 0.05
-batch = 50
-alpha = 0.001
-alpha2 = 0.06
+num = 10
+alpha = 1e-3
+beta_fidel = 1e3
+beta_grad = 1e-3
+init_val = 'mean'
 
 name = '0'
 pckl_sc = load_pkls(f'/fast_storage/hwihun/pkls_BH/folder{name}_test_paired_source.pklv4')
@@ -214,8 +196,8 @@ imgs_har = []
 for ze in tqdm(range(int(len(pckl_sc)/batch))):
     img_sc,gt = gen_sc(pckl_sc,ze,batch)
     init = ref
-    img_mrflow = mrflow(img_sc,model,alpha1,alpha2,beta_fidel,beta_grad,num,init,gt,th)
+    img_BlindHarmony = BlindHarmony(img,model,alpha,beta_fidel,beta_grad,num,init)
     for i in range(batch):
-        imgs_har.append(img_mrflow[:,:,i])
+        imgs_har.append(img_BlindHarmony[:,:,i])
 
-to_pklv4(imgs_har, f'./inf_pro/harmonized_pro_{name}_alpha1_{alpha1}_alpha2_{alpha2}_fidel_{beta_fidel}_grad_{beta_grad}_num_{num}_init_volume.pklv4', vebose=True)
+to_pklv4(imgs_har, f'./inf_real_data/harmonized_pro_{name}_alpha1_{alpha1}_fidel_{beta_fidel}_grad_{beta_grad}_num_{num}.pklv4', vebose=True)
