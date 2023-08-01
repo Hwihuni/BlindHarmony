@@ -16,8 +16,6 @@ conda env create -f environment.yml
 
 The whole data of OASIS-3 can be accessed by https://www.oasis-brains.org.
 
-The whole data of BRATS can be accessed by https://www.synapse.org/#!Synapse:syn27046444/wiki/616571
-
 ## Pretrained models
 
 The checkpoints can be downloaded from google drive link in https://drive.google.com/drive/folders/1AuCYGiNOZ8hWrqiV_npsjmcodNVfRb6z?usp=share_link
