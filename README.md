@@ -1,7 +1,7 @@
 # BlindHarmony
 Official implementation of BlindHarmony: Blind harmonization for MR image
 > H. Jeong, H. Byun, D. Kang, and J. Lee, _BlindHarmony: “Blind” Harmonization for MR Images via Flow model_, Arxiv 2023,
-> [[arXiv]]()
+> [[arXiv]](https://arxiv.org/abs/2305.10732)
 
 ## Dependencies
 
@@ -14,7 +14,7 @@ conda env create -f environment.yml
 
 ## Dataset
 
-The whole data of OASIS-3 can be accessed by https://www.oasis-brains.org/.
+The whole data of OASIS-3 can be accessed by https://www.oasis-brains.org.
 
 The whole data of BRATS can be accessed by https://www.synapse.org/#!Synapse:syn27046444/wiki/616571
 
